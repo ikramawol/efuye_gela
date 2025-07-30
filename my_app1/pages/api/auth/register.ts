@@ -1,11 +1,10 @@
 import { NextApiRequest, NextApiResponse } from 'next'
-import { hashPassword, generateAccessToken } from '@/lib/auth'
+import { hashPassword } from '@/lib/auth'
+import { generateJwt } from '@/utils/jwt'
 import { createUser, getUserByEmail } from '@/lib/controller'
 
-export default async function handler(req: NextApiRequest, res: NextApiResponse) {
-  if (req.method !== 'POST') {
-    return res.status(405).json({ success: false, error: 'Method not allowed' })
-  }
+export default async function POST(req: NextApiRequest, res: NextApiResponse) {
+
   try {
     const { email, password, name } = req.body
 
@@ -22,7 +21,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     const result = await createUser(email, name, hashedPassword)
 
     if (result.success && result.data) {
-      const accessToken = generateAccessToken({
+      const accessToken = generateJwt({
         id: result.data.id,
         email: result.data.email
       })

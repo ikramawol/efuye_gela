@@ -6,14 +6,14 @@ const JWT_SECRET = process.env.JWT_SECRET || 'your-secret-key'
 const JWT_EXPIRES_IN = '24h'
 
 // Generate Access Token
-export const generateAccessToken = (payload: { id: number; email: string }) => {
+export const generateAccessToken = (payload: { userId: number; username: string }) => {
   return jwt.sign(payload, JWT_SECRET, { expiresIn: JWT_EXPIRES_IN })
 }
 
 // Verify Access Token
 export const verifyAccessToken = (token: string) => {
   try {
-    return jwt.verify(token, JWT_SECRET) as { id: number; email: string }
+    return jwt.verify(token, JWT_SECRET) as { userId: number; username: string }
   } catch (error) {
     return null
   }

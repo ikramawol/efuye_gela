@@ -1,11 +1,10 @@
 import { NextApiRequest, NextApiResponse } from 'next'
-import { comparePassword, generateAccessToken } from '@/lib/auth'
+import { comparePassword } from '@/lib/auth'
+import { generateJwt } from '@/utils/jwt'
 import prisma from '@/lib/prisma'
 
-export default async function handler(req: NextApiRequest, res: NextApiResponse) {
-  if (req.method !== 'POST') {
-    return res.status(405).json({ success: false, error: 'Method not allowed' })
-  }
+export default async function handlerPOST(req: NextApiRequest, res: NextApiResponse) {
+  
   try {
     const { email, password } = req.body
 
@@ -40,7 +39,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     }
 
     // Generate access token
-    const accessToken = generateAccessToken({
+    const accessToken = generateJwt({
       id: user.id,
       email: user.email
     })

@@ -39,7 +39,7 @@ model Post {
   title String
   content String
   published Boolean @default(false)
-  author User @relation(fields: [authorId], references: [id])
+  author User @relation(fields: [authorId], references: [id], onDelete: Cascade)
   authorId Int
   comments Comment[]
   category   Category? @relation(fields: [categoryId], references: [id])
@@ -52,9 +52,9 @@ model Post {
 model Comment {
   id Int @id @default(autoincrement())
   content String
-  author User @relation(fields: [authorId], references: [id])
+  author User @relation(fields: [authorId], references: [id], onDelete: Cascade)
   authorId Int
-  post Post @relation(fields: [postId], references: [id])
+  post Post @relation(fields: [postId], references: [id], onDelete: Cascade)
   postId Int
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt

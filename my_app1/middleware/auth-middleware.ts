@@ -1,47 +1,96 @@
-import { NextApiRequest, NextApiResponse } from 'next'
-import { hashPassword, generateAccessToken } from '@/lib/auth'
-import { createUser, getUserByEmail } from '@/lib/controller'
+import { NextApiRequest, NextApiResponse } from 'next';
+import { verifyJwt, parseAuthCookie } from '@/utils/jwt';
 
-export default async function handler(req: NextApiRequest, res: NextApiResponse) {
-  if (req.method !== 'POST') {
-    return res.status(405).json({ success: false, error: 'Method not allowed' })
-  }
-  try {
-    const { email, password, name } = req.body
+export interface AuthenticatedRequest extends NextApiRequest {
+  user?: {
+    id: number;
+    email: string;
+  };
+}
 
-    if (!email || !password) {
-      return res.status(400).json({ success: false, error: 'Email and password are required' })
+export type AuthMiddleware = (
+  req: AuthenticatedRequest,
+  res: NextApiResponse,
+  next: () => void
+) => void;
+
+export function authMiddleware(handler: (req: AuthenticatedRequest, res: NextApiResponse) => Promise<void>) {
+  return async (req: AuthenticatedRequest, res: NextApiResponse) => {
+    try {
+      // Check for token in Authorization header
+      const authHeader = req.headers.authorization;
+      let token: string | null = null;
+
+      if (authHeader && authHeader.startsWith('Bearer ')) {
+        token = authHeader.substring(7);
+      } else {
+        // Fallback to cookie if no Authorization header
+        const cookieHeader = req.headers.cookie;
+        token = parseAuthCookie(cookieHeader);
+      }
+
+      if (!token) {
+        return res.status(401).json({ 
+          success: false, 
+          error: 'Authentication required' 
+        });
+      }
+
+      // Verify the token
+      const payload = verifyJwt(token);
+      if (!payload) {
+        return res.status(401).json({ 
+          success: false, 
+          error: 'Invalid or expired token' 
+        });
+      }
+
+      // Attach user to request
+      req.user = {
+        id: payload.id,
+        email: payload.email
+      };
+
+      // Call the original handler
+      return handler(req, res);
+    } catch (error) {
+      console.error('Auth middleware error:', error);
+      return res.status(500).json({ 
+        success: false, 
+        error: 'Authentication failed' 
+      });
     }
+  };
+}
 
-    const existingUser = await getUserByEmail(email)
-    if (existingUser.success && existingUser.data) {
-      return res.status(409).json({ success: false, error: 'User with this email already exists' })
-    }
+// Optional middleware that doesn't require authentication but adds user if available
+// export function optionalAuthMiddleware(handler: (req: AuthenticatedRequest, res: NextApiResponse) => Promise<void>) {
+//   return async (req: AuthenticatedRequest, res: NextApiResponse) => {
+//     try {
+//       const authHeader = req.headers.authorization;
+//       let token: string | null = null;
 
-    const hashedPassword = await hashPassword(password)
-    const result = await createUser(email, name, hashedPassword)
+//       if (authHeader && authHeader.startsWith('Bearer ')) {
+//         token = authHeader.substring(7);
+//       } else {
+//         const cookieHeader = req.headers.cookie;
+//         token = parseAuthCookie(cookieHeader);
+//       }
 
-    if (result.success && result.data) {
-      const accessToken = generateAccessToken({
-        id: result.data.id,
-        email: result.data.email
-      })
-      return res.status(201).json({
-        success: true,
-        data: {
-          user: {
-            id: result.data.id,
-            email: result.data.email,
-            name: result.data.name
-          },
-          accessToken
-        },
-        message: 'User registered successfully'
-      })
-    } else {
-      return res.status(500).json({ success: false, error: result.error })
-    }
-  } catch (error) {
-    return res.status(500).json({ success: false, error: 'Internal server error' })
-  }
-} 
+//       if (token) {
+//         const payload = verifyJwt(token);
+//         if (payload) {
+//           req.user = {
+//             userId: payload.userId,
+//             username: payload.username
+//           };
+//         }
+//       }
+
+//       return handler(req, res);
+//     } catch (error) {
+//       console.error('Optional auth middleware error:', error);
+//       return handler(req, res);
+//     }
+//   };
+// } 
