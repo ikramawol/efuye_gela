@@ -1,5 +1,5 @@
 import { NextApiRequest, NextApiResponse } from 'next'
-import { comparePassword } from '@/lib/auth'
+import { comparePassword } from '@/utils/jwt'
 import { generateJwt } from '@/utils/jwt'
 import prisma from '@/lib/prisma'
 

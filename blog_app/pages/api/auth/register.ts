@@ -1,5 +1,5 @@
 import { NextApiRequest, NextApiResponse } from 'next'
-import { hashPassword } from '@/lib/auth'
+import { hashPassword } from '@/utils/jwt'
 import { generateJwt } from '@/utils/jwt'
 import { createUser, getUserByEmail } from '@/lib/controller'
 
