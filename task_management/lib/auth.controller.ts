@@ -46,7 +46,7 @@ export async function getAllUsers(){
     try{
         const users = await prisma.user.findMany();
         return {
-            succes: true,
+            success: true,
             data: users
         }
     } catch (error) {

@@ -2,11 +2,16 @@ import { NextApiRequest, NextApiResponse } from 'next'
 import { hashPassword, generateJwt } from '@/utils/jwt'
 import { createUser, getUserByEmail } from '@/lib/auth.controller'
 
-export default async function POST(req: NextApiRequest, res: NextApiResponse){
+export async function POST(req: NextApiRequest, res: NextApiResponse){
     try {
         const { email, password, name } = req.body
         if (!email || !password){
             return res.status(400).json({ success: false, error: 'Email and password are required'})
+        }
+
+        const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+        if (!emailRegex.test(email)) {
+            return res.status(400).json({ success: false, error: 'Invalid email format' })
         }
 
         const existingUser = await getUserByEmail(email)
@@ -51,3 +56,13 @@ export default async function POST(req: NextApiRequest, res: NextApiResponse){
         })
     }
 }
+
+export default function handler(req: NextApiRequest, res: NextApiResponse) {
+  if (req.method === 'POST') {
+    return POST(req, res);
+  }
+  return res.status(405).json({ success: false, error: 'Method not allowed' })
+}
+
+
+

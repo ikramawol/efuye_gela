@@ -2,7 +2,7 @@ import { NextApiRequest, NextApiResponse } from 'next';
 import { comparePassword, generateJwt } from '@/utils/jwt';
 import prisma from '@/lib/prisma';
 
-export default async function POST(req: NextApiRequest, res: NextApiResponse){
+export default async function handlePOST(req: NextApiRequest, res: NextApiResponse){
     try {
         const { email, password } = req.body;
 

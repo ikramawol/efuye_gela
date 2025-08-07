@@ -5,7 +5,8 @@ import { z } from "zod";
 
 const updateUserSchema = z.object({
   name: z.string().min(1).optional(),
-  email: z.string().optional(),
+  email: z.string().email().optional(),
+  password: z.string().min(6).optional(),
 });
 
 export async function handleGET(
@@ -22,8 +23,7 @@ export async function handleGET(
     const user = await prisma.user.findUnique({
       where: { id: userId },
       include: {
-        posts: true,
-        comments: true,
+        tasks: true,
       },
     });
     if (!user) {
@@ -68,41 +68,27 @@ export async function handlePUT(req: AuthenticatedRequest, res: NextApiResponse)
     });
   }
 
-  const { name, email } = parsed.data;
+  const { name, email, password } = parsed.data;
 
   try {
     if (email) {
-      const existingUser = await prisma.user.findUnique({
-        where: { email },
-      });
+      const existingUser = await prisma.user.findUnique({ where: { email } });
       if (existingUser && existingUser.id !== userId) {
-        return res.status(409).json({ 
-          success: false, 
-          error: "Email is already taken by another user" 
-        });
+        return res.status(409).json({ success: false, error: "Email is already taken by another user" });
       }
     }
-
+    let updateData: any = {};
+    if (name) updateData.name = name;
+    if (email) updateData.email = email;
+    if (password) updateData.password = password; // hash if needed
     const updatedUser = await prisma.user.update({
       where: { id: userId },
-      data: {
-        ...(name && { name }),
-        ...(email && { email }),
-      },
-      select: {
-        id: true,
-        name: true,
-        email: true,
-        posts: true,
-        comments: true,
+      data: updateData,
+      include: {
+        tasks: true,
       },
     });
-
-    return res.status(200).json({ 
-      success: true, 
-      data: updatedUser,
-      message: "User updated successfully" 
-    });
+    return res.status(200).json({ success: true, data: updatedUser, message: "User updated successfully" });
   } catch (error) {
     console.error("Update user error:", error);
     return res.status(500).json({ 
